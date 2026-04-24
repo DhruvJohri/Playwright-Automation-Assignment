@@ -26,34 +26,37 @@ export default defineConfig({
   },
 
   projects: [
-    // Auth setup — runs once before UI tests that need login
-    {
-      name: 'setup',
-      testMatch: '**/auth.setup.ts',
+  // Auth setup — runs once
+  {
+    name: 'setup',
+    testMatch: '**/auth.setup.ts',
+  },
+
+  // UI tests (no auth)
+  {
+    name: 'ui-no-auth',
+    testDir: './tests/ui',
+    testIgnore: '**/order*.spec.ts',
+    use: { ...devices['Desktop Chrome'] },
+  },
+
+  // UI tests that use stored login
+  {
+    name: 'ui-with-auth',
+    testDir: './tests/ui',
+    testMatch: '**/order*.spec.ts',
+    use: {
+      ...devices['Desktop Chrome'],
+      storageState: 'auth.json',
     },
-    // UI tests (no auth needed)
-    {
-      name: 'ui-no-auth',
-      testDir: './tests/ui',
-      testIgnore: '**/order*.spec.ts',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    // UI tests that need pre-auth state
-    {
-      name: 'ui-with-auth',
-      testDir: './tests/ui',
-      testMatch: '**/order*.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: 'auth.json',
-      },
-      dependencies: ['setup'],
-    },
-    // API tests
-    {
-      name: 'api',
-      testDir: './tests/api',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
+    dependencies: ['setup'],
+  },
+
+  // API tests
+  {
+    name: 'api',
+    testDir: './tests/api',
+    use: { ...devices['Desktop Chrome'] },
+  },
+],
 });

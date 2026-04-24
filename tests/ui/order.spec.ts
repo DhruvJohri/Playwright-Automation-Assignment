@@ -20,8 +20,9 @@ async function addProductToCart(page: any) {
   const home = new HomePage(page);
   const products = new ProductsPage(page);
   await home.clickProducts();
-  await products.hoverAndAddToCart(0);
-  await products.continueShopping();
+  // await products.hoverAndAddToCart(0);
+  // await products.continueShopping();
+  await products.addFirstProductToCart();
 }
 
 // Helper: complete full registration via UI
@@ -39,6 +40,8 @@ async function registerViaUI(page: any, user: typeof newUser) {
   await signup.verifyAccountCreated();
   await signup.clickContinue();
 }
+
+test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe('Order & Checkout Flows', () => {
   test('TC14: Place Order - Register while Checkout', async ({ page }) => {

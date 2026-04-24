@@ -58,7 +58,7 @@ export class CartPage {
   }
 
   async proceedToCheckout() {
-    await this.page.getByRole('link', { name: /proceed to checkout/i }).click();
+    await this.page.getByText('Proceed To Checkout', { exact: true }).click();
   }
 
   async clickRegisterLoginInCheckout() {

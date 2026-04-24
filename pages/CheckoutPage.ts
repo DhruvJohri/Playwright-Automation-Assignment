@@ -72,9 +72,7 @@ export class CheckoutPage {
 
   async verifyOrderSuccess() {
     await expect(
-      this.page.locator('p:has-text("Congratulations! Your order has been confirmed!")')
-        .or(this.page.locator('h2[data-qa="order-placed"]'))
-        .or(this.page.locator('b:has-text("Your order has been placed successfully!")'))
+      this.page.getByRole('heading', { name: /order placed!/i })
     ).toBeVisible({ timeout: 15000 });
   }
 

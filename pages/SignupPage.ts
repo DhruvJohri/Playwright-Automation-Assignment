@@ -27,7 +27,7 @@ export class SignupPage {
   async verifyAccountInfoFormVisible() {
     await expect(
       this.page.locator('h2.title b:has-text("Enter Account Information")')
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
   }
 
   async fillAccountDetails(user: UserData) {

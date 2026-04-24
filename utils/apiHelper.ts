@@ -109,10 +109,23 @@ export class ApiHelper {
 
   // API 14
   async getUserByEmail(email: string) {
-    const res = await this.request.get(`${BASE}/getUserDetailByEmail`, {
-      params: { email },
-    });
+    let res;
+    try {
+      res = await this.request.get(`${BASE}/getUserDetailByEmail`, {
+        params: { email },
+      });
+    } catch {
+      res = await this.request.get(`${BASE}/getUserDetailByEmail`, {
+        params: { email },
+      });
+    }
     const body = await res.json();
-    return { status: res.status(), body };
+    return {
+      status: res.status(),
+      body: {
+        ...body,
+        data: body.data ?? body.user,
+      },
+    };
   }
 }

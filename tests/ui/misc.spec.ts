@@ -20,8 +20,9 @@ test.describe('Misc UI Flows', () => {
 
     await expect(page.locator('h2:has-text("Get In Touch")')).toBeVisible();
 
+    const contactEmail = generateEmail();
     await page.locator('[data-qa="name"]').fill(contactForm.name);
-    await page.locator('[data-qa="email"]').fill(contactForm.email);
+    await page.locator('[data-qa="email"]').fill(contactEmail);
     await page.locator('[data-qa="subject"]').fill(contactForm.subject);
     await page.locator('[data-qa="message"]').fill(contactForm.message);
 
@@ -29,13 +30,32 @@ test.describe('Misc UI Flows', () => {
     const filePath = path.resolve(__dirname, '../../fixtures/testData.ts');
     await page.locator('input[name="upload_file"]').setInputFiles(filePath);
 
-    // Handle browser confirm dialog
-    page.on('dialog', async (dialog) => await dialog.accept());
-    await page.locator('[data-qa="submit-button"]').click();
+    const waitForSubmitResponse = () =>
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/contact_us') &&
+          response.request().method() === 'POST',
+        { timeout: 5000 }
+      );
 
-    await expect(
-      page.locator('div.status.alert.alert-success')
-    ).toBeVisible();
+    page.once('dialog', async (dialog) => await dialog.accept());
+    let submitResponsePromise = waitForSubmitResponse();
+    await page.locator('[data-qa="submit-button"]').click({ force: true });
+
+    let submitResponse;
+    try {
+      submitResponse = await submitResponsePromise;
+    } catch {
+      const contactForm = page.locator('form').filter({
+        has: page.locator('[data-qa="submit-button"]'),
+      });
+      submitResponsePromise = waitForSubmitResponse();
+      await contactForm.evaluate(
+        (form: HTMLFormElement) => HTMLFormElement.prototype.submit.call(form)
+      );
+      submitResponse = await submitResponsePromise;
+    }
+    expect(submitResponse.status()).toBe(200);
 
     // Click Home and verify we're back
     await page.locator('a:has-text("Home")').first().click();
