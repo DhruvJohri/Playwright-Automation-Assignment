@@ -1,0 +1,16 @@
+{
+  "name": "playwright-automationexercise",
+  "version": "1.0.0",
+  "description": "Playwright UI + API automation for automationexercise.com",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test tests/ui/",
+    "test:api": "npx playwright test tests/api/",
+    "test:headed": "npx playwright test --headed",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.43.0",
+    "dotenv": "^16.4.5"
+  }
+}
