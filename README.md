@@ -1,16 +1,60 @@
 # Playwright Automation Suite — automationexercise.com
 
-Full UI + API automation covering all 26 UI test cases and 14 API test cases from [automationexercise.com](https://automationexercise.com/test_cases).
+End-to-end UI and API test automation for [automationexercise.com](https://automationexercise.com), covering all 26 UI test cases and 14 API test cases with parallel execution, HTML reporting, and CI/CD integration.
 
 ---
 
-## Tech Stack
+## Table of Contents
 
-- **Framework:** Playwright (TypeScript)
-- **Pattern:** Page Object Model (POM)
-- **Reporting:** HTML Report + Screenshots on failure
-- **Parallelism:** 4 workers (configurable)
-- **CI Ready:** Yes
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Test Coverage](#test-coverage)
+- [Getting Started](#getting-started)
+- [Running Tests](#running-tests)
+- [Reports](#reports)
+- [CI/CD](#cicd)
+- [Design Decisions](#design-decisions)
+- [Author](#author)
+
+---
+
+## Overview
+
+A production-grade Playwright automation suite built with TypeScript, covering the complete functional scope of automationexercise.com — from user registration and e-commerce checkout flows to REST API contract validation and UI/API cross-verification.
+
+| Metric | Value |
+|---|---|
+| Total Tests | 40 |
+| UI Tests | 26 (TC1–TC26) |
+| API Tests | 14 (API1–API14) |
+| Pattern | Page Object Model (POM) |
+| Execution | Fully parallel (4 workers) |
+| Reporting | HTML, screenshots on failure, video on retry |
+| CI | GitHub Actions |
+
+---
+
+## Architecture
+
+```
+Test Layer (specs)
+  auth · cart · misc · order · products · api
+          |
+Page Object Model (pages/)
+  HomePage · LoginPage · SignupPage
+  ProductsPage · CartPage · CheckoutPage
+          |
+Utilities & Fixtures
+  ApiHelper (14 endpoints) · testData · auth.setup
+```
+
+Key principles:
+
+- All locators live exclusively inside page objects, never in test files
+- Every test is fully independent with no shared state or execution order dependency
+- API is used for fast setup and teardown; UI validates only the user-facing flow under test
+- Unique emails generated per test via `Date.now()` to support safe parallel execution
 
 ---
 
@@ -18,16 +62,18 @@ Full UI + API automation covering all 26 UI test cases and 14 API test cases fro
 
 ```
 playwright-automationexercise/
+│
 ├── tests/
-│   ├── auth.setup.ts          # One-time login session setup
+│   ├── auth.setup.ts           # Session bootstrap — runs once before auth-dependent tests
 │   ├── ui/
-│   │   ├── auth.spec.ts       # TC1–TC5  (Register, Login, Logout)
-│   │   ├── misc.spec.ts       # TC6–TC7, TC10–TC11, TC25–TC26
-│   │   ├── products.spec.ts   # TC8–TC9, TC18–TC19, TC21–TC22
-│   │   ├── cart.spec.ts       # TC12–TC13, TC17, TC20
-│   │   └── order.spec.ts      # TC14–TC16, TC23–TC24
+│   │   ├── auth.spec.ts        # TC1–TC5   · Register, Login, Logout
+│   │   ├── misc.spec.ts        # TC6–TC7, TC10–TC11, TC25–TC26 · Contact, Subscribe, Scroll
+│   │   ├── products.spec.ts    # TC8–TC9, TC18–TC19, TC21–TC22 · Products, Search, Brands
+│   │   ├── cart.spec.ts        # TC12–TC13, TC17, TC20 · Cart operations
+│   │   └── order.spec.ts       # TC14–TC16, TC23–TC24 · Checkout and Payment
 │   └── api/
-│       └── api.spec.ts        # API 1–14
+│       └── api.spec.ts         # API1–API14 · Full REST API validation
+│
 ├── pages/
 │   ├── HomePage.ts
 │   ├── LoginPage.ts
@@ -35,23 +81,73 @@ playwright-automationexercise/
 │   ├── ProductsPage.ts
 │   ├── CartPage.ts
 │   └── CheckoutPage.ts
+│
 ├── fixtures/
-│   └── testData.ts            # Centralized test data
+│   └── testData.ts             # Centralized test data — no hardcoding in specs
+│
 ├── utils/
-│   └── apiHelper.ts           # Reusable API wrapper (all 14 APIs)
-├── playwright.config.ts
-├── .env                       # Credentials (never commit to git)
+│   └── apiHelper.ts            # Typed wrapper for all 14 API endpoints
+│
+├── .github/
+│   └── workflows/
+│       └── playwright.yml      # GitHub Actions CI pipeline
+│
+├── playwright.config.ts        # Parallel config, projects, reporting
+├── .env.example                # Environment variable template
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-## Setup
+## Test Coverage
+
+### UI Tests — 26 Total
+
+| Spec File | Test Cases | What Is Tested |
+|---|---|---|
+| `auth.spec.ts` | TC1, TC2, TC3, TC4, TC5 | Register new user, Login with valid credentials, Login with invalid credentials, Logout, Register with existing email |
+| `misc.spec.ts` | TC6, TC7, TC10, TC11, TC25, TC26 | Contact Us form with file upload, Test Cases page navigation, Newsletter subscription from home page, Newsletter subscription from cart page, Scroll Up via arrow button, Scroll Up without arrow button |
+| `products.spec.ts` | TC8, TC9, TC18, TC19, TC21, TC22 | All Products page and product detail verification, Product search, Category navigation, Brand filtering, Product review submission, Add to cart from Recommended Items |
+| `cart.spec.ts` | TC12, TC13, TC17, TC20 | Add multiple products to cart, Quantity validation, Remove product from cart, Cart persistence after login |
+| `order.spec.ts` | TC14, TC15, TC16, TC23, TC24 | Place order registering during checkout, Place order registering before checkout, Place order logging in before checkout, Delivery and billing address verification, Invoice download after order |
+
+### API Tests — 14 Total
+
+| # | Endpoint | Method | What Is Asserted |
+|---|---|---|---|
+| API1 | `/api/productsList` | GET | Status 200, products array non-empty, each product has `id`, `name`, `price`, `brand`, `category` |
+| API2 | `/api/productsList` | POST | responseCode 405, method not supported message |
+| API3 | `/api/brandsList` | GET | Status 200, brands array non-empty, each brand has `id`, `brand` |
+| API4 | `/api/brandsList` | PUT | responseCode 405, method not supported message |
+| API5 | `/api/searchProduct` | POST | responseCode 200, matching products returned |
+| API6 | `/api/searchProduct` | POST (no param) | responseCode 400, missing parameter error |
+| API7 | `/api/verifyLogin` | POST (valid) | responseCode 200, "User exists" |
+| API8 | `/api/verifyLogin` | POST (no email) | responseCode 400, missing parameter error |
+| API9 | `/api/verifyLogin` | DELETE | responseCode 405, method not supported |
+| API10 | `/api/verifyLogin` | POST (invalid) | responseCode 404, "User not found" |
+| API11 | `/api/createAccount` | POST | responseCode 201, "User created" |
+| API12 | `/api/deleteAccount` | DELETE | responseCode 200, "Account deleted" |
+| API13 | `/api/updateAccount` | PUT | responseCode 200, "User updated" |
+| API14 | `/api/getUserDetailByEmail` | GET | Status 200, correct `email` and `name` in response body |
+
+### UI + API Cross-Verification
+
+| Test | UI Action | API Verification |
+|---|---|---|
+| TC1 | Register user via full UI flow | API14 called post-registration to confirm user exists in backend |
+| TC8 | Load All Products page in browser | API1 called to validate product count and field structure match |
+| TC9 | Search for product via UI search bar | API5 called to verify same results returned from backend |
+| TC19 | Browse brand products via UI | API3 called to verify brand data consistency between frontend and backend |
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Node.js >= 18
-- npm >= 9
+
+- Node.js 18 or higher
+- npm 9 or higher
 
 ### Install
 
@@ -62,27 +158,28 @@ npm install
 npx playwright install chromium
 ```
 
-### Configure environment
+### Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Open `.env` and fill in your test credentials:
+
 ```
 TEST_EMAIL=your_test_email@gmail.com
 TEST_PASSWORD=YourPassword@123
 TEST_USERNAME=YourUsername
 ```
 
-> ⚠️ Use a throwaway email. Tests create and delete accounts automatically.
+Use a throwaway email address. Tests automatically create and delete accounts during execution. Do not use a real personal account.
 
 ---
 
 ## Running Tests
 
 ```bash
-# Run all tests (UI + API)
+# Run the full suite (UI + API)
 npx playwright test
 
 # Run only UI tests
@@ -94,125 +191,103 @@ npx playwright test tests/api/
 # Run a specific spec file
 npx playwright test tests/ui/auth.spec.ts
 
-# Run in headed mode (see the browser)
+# Run in headed mode to watch the browser
 npx playwright test --headed
 
-# Run with specific number of workers
+# Control number of parallel workers
 npx playwright test --workers=2
 
-# Debug a single test
+# Debug a single test interactively
 npx playwright test --debug tests/ui/auth.spec.ts
+
+# Open Playwright's visual UI mode
+npx playwright test --ui
 ```
 
 ---
 
-## View Report
+## Reports
+
+An HTML report is generated automatically after every run.
 
 ```bash
 npx playwright show-report
 ```
 
-HTML report is generated at `playwright-report/index.html` after every run.  
-Screenshots are captured automatically on test failure.
+The report is saved to `playwright-report/index.html`.
+
+| Feature | Behavior |
+|---|---|
+| Screenshots | Captured automatically on test failure |
+| Video | Retained on first retry |
+| Trace | Recorded on first retry, viewable with `npx playwright show-trace` |
+| HTML Report | Always generated, never auto-opens in CI |
 
 ---
 
-## Test Coverage
+## CI/CD
 
-### UI Tests (26 Total)
+This suite runs on GitHub Actions on every push and pull request to `main` or `master`.
 
-| File | Test Cases | Description |
-|------|-----------|-------------|
-| `auth.spec.ts` | TC1–TC5 | Register, Login (valid/invalid), Logout, Existing email |
-| `misc.spec.ts` | TC6, TC7, TC10, TC11, TC25, TC26 | Contact form, Test cases page, Subscriptions, Scroll |
-| `products.spec.ts` | TC8, TC9, TC18, TC19, TC21, TC22 | Products, Search, Categories, Brands, Review, Recommended |
-| `cart.spec.ts` | TC12, TC13, TC17, TC20 | Add to cart, Quantity, Remove, Cart after login |
-| `order.spec.ts` | TC14, TC15, TC16, TC23, TC24 | Place order (3 flows), Address verify, Invoice download |
+Pipeline steps:
 
-### API Tests (14 Total)
+1. Check out the repository
+2. Set up Node.js 20
+3. Install dependencies with `npm ci`
+4. Install Chromium browser
+5. Run all tests with CI settings (2 workers, 2 retries)
+6. Upload HTML report as a build artifact, retained for 7 days
 
-| API | Endpoint | Method | Validated |
-|-----|----------|--------|-----------|
-| 1 | `/api/productsList` | GET | 200, products array, fields |
-| 2 | `/api/productsList` | POST | 405 not supported |
-| 3 | `/api/brandsList` | GET | 200, brands array, fields |
-| 4 | `/api/brandsList` | PUT | 405 not supported |
-| 5 | `/api/searchProduct` | POST | 200, matching results |
-| 6 | `/api/searchProduct` | POST (no param) | 400 bad request |
-| 7 | `/api/verifyLogin` | POST (valid) | 200 User exists |
-| 8 | `/api/verifyLogin` | POST (no email) | 400 bad request |
-| 9 | `/api/verifyLogin` | DELETE | 405 not supported |
-| 10 | `/api/verifyLogin` | POST (invalid) | 404 User not found |
-| 11 | `/api/createAccount` | POST | 201 User created |
-| 12 | `/api/deleteAccount` | DELETE | 200 Account deleted |
-| 13 | `/api/updateAccount` | PUT | 200 User updated |
-| 14 | `/api/getUserDetailByEmail` | GET | 200, correct user JSON |
+### Required GitHub Secrets
 
----
+Go to `Settings → Secrets and variables → Actions` and add the following:
 
-## UI + API Cross-Verification
-
-Key tests cross-verify frontend and backend consistency:
-
-- **TC1** → After UI registration, calls API14 to confirm user exists in DB
-- **TC8** → After loading products page in UI, calls API1 to verify product count/structure matches
-- **TC9** → After UI search, calls API5 to verify same results from backend
-- **TC19** → After UI brand page, calls API3 to verify brands data
+| Secret Name | Value |
+|---|---|
+| `TEST_EMAIL` | Test account email address |
+| `TEST_PASSWORD` | Test account password |
+| `TEST_USERNAME` | Test account display name |
 
 ---
 
 ## Design Decisions
 
 ### No Hard Waits
-All tests use Playwright's built-in auto-waiting. Zero `waitForTimeout` calls (except one brief DOM settle in cart removal).
+
+Zero `waitForTimeout` calls anywhere in the suite. All synchronization relies on Playwright's built-in auto-waiting. Actions wait for elements to be actionable and assertions retry automatically until the configured timeout.
+
+### Locator Strategy — Priority Order
+
+1. `data-qa` attributes, which the site provides specifically for automation
+2. `getByRole` with accessible name — semantic and resilient to CSS changes
+3. `getByText` and `getByPlaceholder` — readable and intent-revealing
+4. Scoped CSS selectors using stable IDs such as `#cart_info_table tbody tr`
+5. XPath, positional CSS, and visual-only selectors are never used
+
+### Test Independence
+
+Every test that requires a user account creates one via API at the start and deletes it via API at the end. No test depends on another test's side effects. All tests can run in any order or fully in parallel without conflict.
 
 ### Unique Emails Per Test
-Every test that creates a user generates a unique email via `Date.now()` to prevent inter-test conflicts when running in parallel.
 
-### API-Assisted Cleanup
-Tests that need a pre-existing user create it via API (fast) rather than UI, and delete via API after the test.
+`generateEmail()` appends `Date.now()` to produce a unique address per invocation. Tests running simultaneously in parallel never collide on the same account.
 
-### Stable Locators
-All locators use `data-qa` attributes where available, falling back to semantic selectors (`role`, `text`, `id`). No fragile XPath.
+### API-Assisted Setup and Teardown
 
-### Shared Auth State
-Order tests (`order.spec.ts`) can optionally use saved `auth.json` from `auth.setup.ts` to skip repeated logins.
+Account creation and deletion happen through API calls rather than UI flows, keeping each test focused on the specific behavior it is validating and reducing overall execution time.
 
----
+### Auth State Separation
 
-## CI/CD (GitHub Actions)
-
-Create `.github/workflows/playwright.yml`:
-
-```yaml
-name: Playwright Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
-        env:
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
-          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-```
+Tests that manage their own authentication — such as registration and order flows — run in fresh browser contexts with no pre-injected session. Shared auth state is only applied to tests that need a pre-authenticated starting point and do not modify it during the test.
 
 ---
 
 ## Author
 
-**Dhruv Johri**  
-GitHub: [@DhruvJohri](https://github.com/DhruvJohri)  
-TCS CodeVita Global Rank 430 (Top 0.1% of 500,000+ participants)
+**Dhruv Johri**
+
+- GitHub: github.com/DhruvJohri
+- LinkedIn: linkedin.com/in/dhruv-johri
+- Twitter: @DhruvJohri_
+
+TCS CodeVita Season 12 — Global Rank 430, Top 0.1% of 500,000+ participants
