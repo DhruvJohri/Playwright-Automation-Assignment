@@ -287,7 +287,4 @@ Tests that manage their own authentication — such as registration and order fl
 **Dhruv Johri**
 
 - GitHub: github.com/DhruvJohri
-- LinkedIn: linkedin.com/in/dhruv-johri
-- Twitter: @DhruvJohri_
 
-TCS CodeVita Season 12 — Global Rank 430, Top 0.1% of 500,000+ participants
